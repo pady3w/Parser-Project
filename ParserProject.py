@@ -15,7 +15,8 @@ class IndentDedentProcessor:
             stripped_line = line.lstrip()
             current_indent = len(line) - len(stripped_line)
 
-            if stripped_line:  # Ignore blank lines
+            # Ignore blank lines
+            if stripped_line:
                 if current_indent > self.indent_stack[-1]:
                     self.output_code.append('<INDENT>')
                     self.indent_stack.append(current_indent)
@@ -25,7 +26,8 @@ class IndentDedentProcessor:
 
             self.output_code.append(stripped_line)
 
-        while len(self.indent_stack) > 1:  # Ensure proper dedentation at EOF
+        # Ensure proper dedentation at EOF
+        while len(self.indent_stack) > 1:
             self.output_code.append('<DEDENT>')
             self.indent_stack.pop()
 
@@ -36,18 +38,18 @@ class TreePrinter:
         self.tree = tree
         self.parser = parser
 
+    # Helper function to get text from a node
     def get_node_text(self, node):
-        """Helper function to get text from a node."""
         if isinstance(node, TerminalNode):
             return node.getText()
         return self.parser.ruleNames[node.getRuleIndex()]
-
+    
+    # Start tree printing from the root
     def print_tree(self):
-        """Start the tree printing from the root."""
         self.visit(self.tree)
 
+    # Recursively visit and print the nodes of the tree
     def visit(self, node, indent_level=0):
-        """Recursively visit and print the nodes of the tree."""
         if node is None:
             return
 
@@ -82,12 +84,9 @@ if __name__ == "__main__":
 
     # Generate the parse tree
     tree = parser.program()
-    #print("\nGenerated Parse Tree:")
-   # print(tree.toStringTree(recog=parser))  # Raw parse tree for debugging
+    # print(tree.toStringTree(recog=parser))  # Raw parse tree for debugging
 
-    # Now let's create an instance of the TreePrinter and visit the tree
-    print("\nVisiting the Parse Tree with TreePrinter:")
-   # Pass the tree to TreePrinter
+    # Pass the tree to TreePrinter
     tree_printer = TreePrinter(tree, parser)
 
     # Print the tree
