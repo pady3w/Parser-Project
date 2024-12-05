@@ -15,7 +15,7 @@ When your parsing and lexing files are ready you can run the program using the f
 
 python ParserProject.py project_deliverable_3.py 
 
-The generated parse tree is shown in the terminal.
+The generated parse tree is shown in the terminal. An example of this full tree is shown in "Printed Tree.pdf".
 
 
 4) Video Link
