@@ -1,39 +1,94 @@
-import sys
 from antlr4 import *
-from antlr4.tree.Tree import TerminalNode  # Import TerminalNode from the Tree module
-from D1Parser import D1Parser  # Import your generated parser
-from D1Lexer import D1Lexer      # Import your generated lexer
+from D3Lexer import D3Lexer
+from D3Parser import D3Parser
+from antlr4 import TerminalNode
 
-def print_tree(node, level=0):
-    # If the node is None, return early
-    if node is None:
-        return
-    
-    indent = '  ' * level
-    node_type = type(node).__name__  # Get the name of the node type
-    node_text = node.getText()  # Get the text for the current node
-    
-    # Print the node text along with its type
-    print(f"{indent}{node_type}: {node_text}")
-    
-    # Iterate over children nodes
-    if hasattr(node, 'children'):
-        for child in node.children:
-            print_tree(child, level + 1)
+class IndentDedentProcessor:
+    def __init__(self, input_code):
+        self.input_code = input_code
+        self.output_code = []
+        self.indent_stack = [0]
 
-# Main execution
-def main(input_file):
-    input_stream = FileStream(input_file)
-    lexer = D1Lexer(input_stream)
+    def preprocess(self):
+        lines = self.input_code.splitlines()
+        for line in lines:
+            stripped_line = line.lstrip()
+            current_indent = len(line) - len(stripped_line)
+
+            if stripped_line:  # Ignore blank lines
+                if current_indent > self.indent_stack[-1]:
+                    self.output_code.append('<INDENT>')
+                    self.indent_stack.append(current_indent)
+                while current_indent < self.indent_stack[-1]:
+                    self.output_code.append('<DEDENT>')
+                    self.indent_stack.pop()
+
+            self.output_code.append(stripped_line)
+
+        while len(self.indent_stack) > 1:  # Ensure proper dedentation at EOF
+            self.output_code.append('<DEDENT>')
+            self.indent_stack.pop()
+
+        return '\n'.join(self.output_code)
+
+class TreePrinter:
+    def __init__(self, tree, parser):
+        self.tree = tree
+        self.parser = parser
+
+    def get_node_text(self, node):
+        """Helper function to get text from a node."""
+        if isinstance(node, TerminalNode):
+            return node.getText()
+        return self.parser.ruleNames[node.getRuleIndex()]
+
+    def print_tree(self):
+        """Start the tree printing from the root."""
+        self.visit(self.tree)
+
+    def visit(self, node, indent_level=0):
+        """Recursively visit and print the nodes of the tree."""
+        if node is None:
+            return
+
+        indent = '  ' * indent_level
+        node_name = self.get_node_text(node)
+
+        # Print the node with its label and value (if applicable)
+        print(f"{indent}{node.__class__.__name__}: {node_name}")
+
+        # Visit all children of the current node
+        for i in range(node.getChildCount()):
+            self.visit(node.getChild(i), indent_level + 1)
+
+if __name__ == "__main__":
+    # Read the Python code from project_deliverable_3.py
+    with open("project_deliverable_3.py", "r") as f:
+        input_code = f.read()
+
+    # Preprocess the code
+    preprocessor = IndentDedentProcessor(input_code)
+    processed_code = preprocessor.preprocess()
+
+    # Print the preprocessed code for debugging
+    print("Preprocessed Code:")
+    print(processed_code)
+
+    # Parse the preprocessed code using ANTLR
+    input_stream = InputStream(processed_code)
+    lexer = D3Lexer(input_stream)
     stream = CommonTokenStream(lexer)
-    parser = D1Parser(stream)
-    
-    tree = parser.program()  # Start parsing from the program rule
-    print_tree(tree)  # Print the parse tree
+    parser = D3Parser(stream)
 
-if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python ParserProject.py <input_file>")
-        sys.exit(1)
+    # Generate the parse tree
+    tree = parser.program()
+    #print("\nGenerated Parse Tree:")
+   # print(tree.toStringTree(recog=parser))  # Raw parse tree for debugging
 
-    main(sys.argv[1])
+    # Now let's create an instance of the TreePrinter and visit the tree
+    print("\nVisiting the Parse Tree with TreePrinter:")
+   # Pass the tree to TreePrinter
+    tree_printer = TreePrinter(tree, parser)
+
+    # Print the tree
+    tree_printer.print_tree()
